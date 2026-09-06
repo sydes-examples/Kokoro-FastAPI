@@ -16,6 +16,7 @@ from api.src.routers.openai_compatible import (
     get_tts_service,
     load_openai_mappings,
     stream_audio_chunks,
+    get_model_name,
 )
 from api.src.services.streaming_audio_writer import StreamingAudioWriter
 from api.src.services.tts_service import TTSService
@@ -1658,3 +1659,6 @@ def test_alias_rate_outside_speed_bounds_rejected():
             voice="grandpa",
             voice_aliases={"grandpa": {"voice": "am_michael", "rate": 9}},
         )
+
+def test_get_model_name_strips_whitespace(mock_openai_mappings):
+    assert get_model_name(" tts-1 ") == "kokoro-v1_0.pth"
