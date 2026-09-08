@@ -4,6 +4,7 @@ import pytest
 
 from api.src.core.config import settings
 from api.src.services.text_processing.text_processor import (
+    MAX_SINGLE_PAUSE_MULTIPLE,
     check_pause_budget,
     smart_split,
 )
@@ -48,3 +49,20 @@ def test_pause_budget_exact_boundary_passes():
 
 def test_pause_free_text_unaffected():
     check_pause_budget("just some ordinary text")
+
+
+def test_single_pause_tag_exceeding_limit_is_rejected():
+    """A tag whose raw duration blows past the per-tag ceiling must be
+    rejected outright, not silently clamped down to max_pause_duration_s.
+    Chosen so the clamped total would stay well under max_total_pause_s,
+    isolating this from the aggregate-budget check."""
+    limit = MAX_SINGLE_PAUSE_MULTIPLE * settings.max_pause_duration_s
+    with pytest.raises(ValueError, match="exceeds"):
+        check_pause_budget(f"hello [pause:{limit + 1}s] there")
+
+
+def test_single_pause_tag_at_limit_passes():
+    """Exactly MAX_SINGLE_PAUSE_MULTIPLE x max_pause_duration_s is allowed;
+    only strictly-over is rejected."""
+    limit = MAX_SINGLE_PAUSE_MULTIPLE * settings.max_pause_duration_s
+    check_pause_budget(f"hello [pause:{limit}s] there")
