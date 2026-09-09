@@ -211,9 +211,11 @@ async def process_and_validate_voice_tags(
     Runs the same mapping and validation as the voice parameter so a bad speaker
     tag fails the request up front rather than part way through the stream.
     A rate-carrying alias expands to a [baserate:] tag alongside the voice, the
-    calibrated pace later [rate:] tags scale instead of overwrite; a voice tag
-    itself resets both rates, so a pace belongs to the voice that was calibrated
-    with it and cannot carry across a voice change onto one that was not.
+    calibrated pace later [rate:] tags scale instead of overwrite. As of PY-H-01,
+    split_by_voice only resets the prosody-scoped [rate:] multiplier on a voice
+    change, not an explicit [baserate:] -- so a calibrated alias's pace persists
+    onto whatever voice speaks next, until that voice's own alias (or another
+    explicit [baserate:]/[rate:] tag) overrides it.
     """
     if not allow_voice_tags:
         return text

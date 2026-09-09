@@ -1566,10 +1566,16 @@ def test_dev_ssml_non_ssml_passes_through():
 
 @pytest.mark.asyncio
 async def test_alias_rate_expands_to_a_baserate_tag():
-    """A rate-carrying alias speaks at its own pace, and an uncalibrated one at 1.0
+    """A rate-carrying alias speaks at its own pace, and its pace persists onto
+    whatever voice speaks next until that voice supplies its own calibration.
 
-    The voice tag itself resets the pace, so grandpa's cannot follow him into
-    the kid's lines. That reset is the whole point of calibrating a voice.
+    PY-H-01 (intentional behavior change, not a bug): this test previously
+    asserted that "kid" reverts to rate 1.0 after "grandpa", because a voice
+    tag used to reset both the prosody [rate:] multiplier and the alias
+    [baserate:] unconditionally. split_by_voice now resets only [rate:] on a
+    voice change; an explicit [baserate:] (grandpa's 0.8, here) persists
+    across the voice change because "kid" is a plain alias with no [baserate:]
+    of its own to override it.
     """
     from api.src.routers.openai_compatible import process_and_validate_voice_tags
     from api.src.services.text_processing.text_processor import split_by_voice
@@ -1592,7 +1598,7 @@ async def test_alias_rate_expands_to_a_baserate_tag():
     segments = split_by_voice(result, "af_bella")
     assert segments == [
         ("am_michael", 0.8, "Hi."),
-        ("af_bella", 1.0, "Yo."),
+        ("af_bella", 0.8, "Yo."),
     ]
 
 

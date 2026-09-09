@@ -117,11 +117,14 @@ def split_by_voice(text: str, default_voice: str) -> List[Tuple[str, float, str]
     [baserate:x] tag (injected by alias resolution) carries the speaking
     voice's calibrated pace; [rate:y] tags scale that base rather than
     replace it, so an explicit rate stays relative to how fast the voice
-    normally speaks. A voice tag resets both, keeping a pace with the voice
-    that was calibrated for it. Runs of segments sharing (voice, rate) are
-    merged so a tag that changes nothing costs nothing downstream, and so
-    chunking still sees whole paragraphs. Effective rates clamp to the
-    request speed bounds (0.25-4.0).
+    normally speaks. A voice tag resets only the prosody-scoped [rate:]
+    multiplier to 1.0; an explicit [baserate:] persists across the voice
+    change, since it describes the request's own calibration rather than
+    something scoped to the voice that was speaking when it was set. Runs
+    of segments sharing (voice, rate) are merged so a tag that changes
+    nothing costs nothing downstream, and so chunking still sees whole
+    paragraphs. Effective rates clamp to the request speed bounds
+    (0.25-4.0).
     """
     parts = CONTROL_TAG_PATTERN.split(text)
     if len(parts) == 1:
@@ -138,7 +141,8 @@ def split_by_voice(text: str, default_voice: str) -> List[Tuple[str, float, str]
         if group == 1:
             if part is not None:
                 current_voice = part.strip()
-                base_rate = 1.0
+                # Only the prosody-scoped [rate:] multiplier resets on a
+                # voice change; an explicit [baserate:] persists (PY-H-01).
                 tag_rate = 1.0
             continue
         if group == 2:
