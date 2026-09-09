@@ -413,3 +413,28 @@ def test_split_baserate_product_clamps_to_speed_bounds():
     assert split_by_voice("[baserate:2.5] [rate:2.0] Whoa.", "af_heart") == [
         ("af_heart", 4.0, "Whoa.")
     ]
+
+
+def test_baserate_persists_across_voice_change():
+    """PY-H-01: an explicit [baserate:] survives a voice change.
+
+    This documents an intentional, preregistered behavior change (calibration
+    case PY-H-01), not a bug fix: previously a [voice:] tag unconditionally
+    reset BOTH the prosody-scoped [rate:] multiplier and the [baserate:]
+    base pace to 1.0. Now only the [rate:] multiplier resets on a voice
+    change; an explicit [baserate:] describes the request's own calibration
+    and persists across subsequent voice changes until overridden by another
+    [baserate:] tag.
+    """
+    text = (
+        "[baserate:0.5] Slow base. "
+        "[voice:af_bella] Bella at base. "
+        "[rate:1.5] Bella faster. "
+        "[voice:am_michael] Michael at base too."
+    )
+    assert split_by_voice(text, "af_heart") == [
+        ("af_heart", 0.5, "Slow base."),
+        ("af_bella", 0.5, "Bella at base."),
+        ("af_bella", 0.75, "Bella faster."),
+        ("am_michael", 0.5, "Michael at base too."),
+    ]
