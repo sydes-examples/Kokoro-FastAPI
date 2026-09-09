@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy as np
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from api.src.core.config import settings
@@ -1658,3 +1659,20 @@ def test_alias_rate_outside_speed_bounds_rejected():
             voice="grandpa",
             voice_aliases={"grandpa": {"voice": "am_michael", "rate": 9}},
         )
+
+
+def test_alias_rate_combined_with_speed_beyond_bounds_is_rejected_not_clamped():
+    """speed=2.5 and an individually-valid alias rate=2.0 both pass field
+    validation on their own, but their product (5.0) is outside RATE_MAX
+    (4.0) -- this must 400, not silently return audio paced at 4.0."""
+    from api.src.routers.openai_compatible import apply_alias_rate
+
+    request = OpenAISpeechRequest(
+        input="Hello.",
+        voice="grandpa",
+        speed=2.5,
+        voice_aliases={"grandpa": {"voice": "am_michael", "rate": 2.0}},
+    )
+    with pytest.raises(HTTPException) as exc_info:
+        apply_alias_rate(request)
+    assert exc_info.value.status_code == 400

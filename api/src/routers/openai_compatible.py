@@ -20,6 +20,8 @@ from ..services.text_processing.text_processor import (
 from ..services.tts_service import TTSService
 from ..structures import OpenAISpeechRequest
 from ..structures.schemas import (
+    RATE_MAX,
+    RATE_MIN,
     AliasMap,
     CaptionedSpeechRequest,
     VoiceAlias,
@@ -250,7 +252,26 @@ def apply_alias_rate(
     if request.allow_voice_tags:
         request.input = f"[baserate:{rate}] {request.input}"
     else:
-        request.speed = clamp_rate(request.speed * rate)
+        combined = request.speed * rate
+        if combined != clamp_rate(combined):
+            # A combined rate that needs clamping means the requested speed
+            # and the voice's alias rate together asked for a pace outside
+            # what's supported -- silently clamping would return audio at a
+            # different pace than the request implied, with no signal to
+            # the caller. Reject instead of clamping.
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "validation_error",
+                    "message": (
+                        f"combined speed {combined:.3f} (speed={request.speed} "
+                        f"x voice alias rate={rate}) is outside the supported "
+                        f"{RATE_MIN}-{RATE_MAX} range"
+                    ),
+                    "type": "invalid_request_error",
+                },
+            )
+        request.speed = combined
 
 
 async def stream_audio_chunks(
