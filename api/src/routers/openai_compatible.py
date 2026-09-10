@@ -468,7 +468,7 @@ async def create_speech(
 
                 try:
                     # Write chunks to temp file
-                    logger.info("Writing chunks to tempory file for download")
+                    logger.info("Writing chunks to temporary file for download")
                     await temp_writer.write(output)
                     # Finalize the temp file
                     await temp_writer.finalize()
