@@ -316,9 +316,24 @@ def handle_email(m: re.Match[str]) -> str:
     parts = email.split("@")
     if len(parts) == 2:
         user, domain = parts
+        if not user or not domain:
+            return email
         domain = domain.replace(".", " dot ")
         return f"{user} at {domain}"
     return email
+
+
+def _speak_url_symbols(url: str) -> str:
+    """Replace the punctuation left after protocol/domain handling with spoken words."""
+    url = url.replace("-", " dash ")
+    url = url.replace("_", " underscore ")
+    url = url.replace("?", " question mark ")
+    url = url.replace("=", " equals ")
+    url = url.replace("&", " ampersand ")
+    url = url.replace("%", " percent ")
+    url = url.replace(":", " colon ")  # Handle any remaining colons
+    url = url.replace("/", " slash ")  # Handle any remaining slashes
+    return url
 
 
 def handle_url(u: re.Match[str]) -> str:
@@ -354,15 +369,7 @@ def handle_url(u: re.Match[str]) -> str:
     else:
         url = domain
 
-    # Replace remaining symbols with words
-    url = url.replace("-", " dash ")
-    url = url.replace("_", " underscore ")
-    url = url.replace("?", " question-mark ")
-    url = url.replace("=", " equals ")
-    url = url.replace("&", " ampersand ")
-    url = url.replace("%", " percent ")
-    url = url.replace(":", " colon ")  # Handle any remaining colons
-    url = url.replace("/", " slash ")  # Handle any remaining slashes
+    url = _speak_url_symbols(url)
 
     # Clean up extra spaces
     return re.sub(r"\s+", " ", url).strip()
