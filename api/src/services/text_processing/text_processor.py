@@ -168,12 +168,31 @@ def handle_custom_phonemes(s: re.Match[str], phenomes_list: Dict[str, str]) -> s
     return latest_id
 
 
+# A raw per-tag duration beyond this multiple of max_pause_duration_s is
+# rejected outright rather than silently clamped down to max_pause_duration_s.
+MAX_SINGLE_PAUSE_MULTIPLE = 2
+
+
 def check_pause_budget(text: str) -> None:
-    """Cap aggregate silence across the whole request, before any segmentation."""
-    total_pause_s = math.fsum(
-        min(float(match.group(1)), settings.max_pause_duration_s)
-        for match in PAUSE_TAG_PATTERN.finditer(text)
-    )
+    """Cap aggregate silence across the whole request, before any segmentation.
+
+    Also rejects any single tag whose raw (pre-clamp) duration exceeds
+    MAX_SINGLE_PAUSE_MULTIPLE x max_pause_duration_s, instead of letting
+    smart_split() silently truncate it down to max_pause_duration_s.
+    """
+    single_pause_limit_s = MAX_SINGLE_PAUSE_MULTIPLE * settings.max_pause_duration_s
+    clamped_durations = []
+    for match in PAUSE_TAG_PATTERN.finditer(text):
+        raw_duration_s = float(match.group(1))
+        if raw_duration_s > single_pause_limit_s:
+            raise ValueError(
+                f"Pause duration {raw_duration_s:.1f}s exceeds the "
+                f"{single_pause_limit_s:.1f}s single-tag limit "
+                f"({MAX_SINGLE_PAUSE_MULTIPLE}x max_pause_duration_s)"
+            )
+        clamped_durations.append(min(raw_duration_s, settings.max_pause_duration_s))
+
+    total_pause_s = math.fsum(clamped_durations)
     if total_pause_s > settings.max_total_pause_s:
         raise ValueError(
             f"Total pause duration {total_pause_s:.1f}s exceeds the "
