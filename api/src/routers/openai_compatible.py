@@ -88,6 +88,7 @@ async def get_tts_service() -> TTSService:
 
 def get_model_name(model: str) -> str:
     """Get internal model name from OpenAI model name"""
+    model = model.strip()
     base_name = _openai_mappings["models"].get(model)
     if not base_name:
         raise ValueError(f"Unsupported model: {model}")
