@@ -319,6 +319,22 @@ def test_openai_speech_streaming_over_pause_budget_is_400(mock_tts_service, test
     assert response.json()["detail"]["error"] == "validation_error"
 
 
+def test_openai_speech_single_oversized_pause_tag_is_400(mock_tts_service, test_voice):
+    """A single tag past the per-tag ceiling must 400, not get silently clamped."""
+    response = client.post(
+        "/v1/audio/speech",
+        json={
+            "model": "kokoro",
+            "input": "[pause:150s] hello",
+            "voice": test_voice,
+            "response_format": "mp3",
+            "stream": True,
+        },
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"]["error"] == "validation_error"
+
+
 def test_captioned_streaming_over_pause_budget_is_400(mock_tts_service):
     """The captioned handler carries the same pre-stream budget check."""
     with patch(
