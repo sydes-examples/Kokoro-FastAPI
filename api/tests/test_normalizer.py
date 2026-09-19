@@ -47,7 +47,7 @@ def test_url_www():
         normalize_text(
             "Check www.site.com?q=test", normalization_options=NormalizationOptions()
         )
-        == "Check www site dot com question-mark q equals test"
+        == "Check www site dot com question mark q equals test"
     )
 
 
@@ -69,7 +69,7 @@ def test_url_localhost():
         normalize_text(
             "Test localhost:3000/test?v=1", normalization_options=NormalizationOptions()
         )
-        == "Test localhost colon three thousand slash test question-mark v equals one"
+        == "Test localhost colon three thousand slash test question mark v equals one"
     )
 
 
@@ -106,7 +106,7 @@ def test_url_raw_domains():
             "Go to example.com/path?q=test",
             normalization_options=NormalizationOptions(),
         )
-        == "Go to example dot com slash path question-mark q equals test"
+        == "Go to example dot com slash path question mark q equals test"
     )
     assert (
         normalize_text(

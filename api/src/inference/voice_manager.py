@@ -52,12 +52,18 @@ class VoiceManager:
         """
         try:
             voice_path = await self.get_voice_path(voice_name)
+        except Exception as e:
+            raise RuntimeError(f"Failed to resolve voice '{voice_name}': {e}") from e
+
+        try:
             target_device = device or self._device
             voice = await paths.load_voice_tensor(voice_path, target_device)
             self._voices[voice_name] = voice
             return voice
         except Exception as e:
-            raise RuntimeError(f"Failed to load voice {voice_name}: {e}")
+            raise RuntimeError(
+                f"Failed to load voice '{voice_name}' from {voice_path}: {e}"
+            ) from e
 
     async def list_voices(self) -> List[str]:
         """List available voice names.
