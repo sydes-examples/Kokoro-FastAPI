@@ -55,6 +55,10 @@ _voice_grades = load_voice_grades()
 # a combine item is a bare voice name or name(weight), parens never nest
 _VOICE_WEIGHT_PATTERN = re.compile(r"(?P<name>[^()]+)(?:\((?P<weight>[^()]*)\))?")
 
+# A weight this large no longer expresses a meaningful mix ratio between the
+# other voices in the combination; it's almost always a client mistake.
+_MAX_VOICE_WEIGHT = 10.0
+
 router = APIRouter(
     tags=["OpenAI Compatible TTS"],
     responses={404: {"description": "Not found"}},
@@ -174,6 +178,10 @@ async def process_and_validate_voices(
                 parsed = math.nan
             if not math.isfinite(parsed) or parsed <= 0:
                 raise ValueError(f"Voice '{token}' must use a positive weight")
+            if parsed > _MAX_VOICE_WEIGHT:
+                raise ValueError(
+                    f"Voice '{token}' weight must not exceed {_MAX_VOICE_WEIGHT}"
+                )
             weight = weight.strip()
 
         name = _openai_mappings["voices"].get(name, name)

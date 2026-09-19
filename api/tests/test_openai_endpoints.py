@@ -509,6 +509,18 @@ def test_combine_voices_weighted(mock_settings, mock_tts_service, tmp_path):
 
 
 @patch("api.src.routers.openai_compatible.settings")
+def test_combine_voices_rejects_excessive_weight(mock_settings, mock_tts_service):
+    """A weight far beyond a meaningful mix ratio 400s with the shared validation message"""
+    mock_settings.allow_local_voice_saving = True
+
+    response = client.post("/v1/audio/voices/combine", json="voice1(50)+voice2")
+    assert response.status_code == 400
+    error_response = response.json()
+    assert error_response["detail"]["error"] == "validation_error"
+    assert "must not exceed" in error_response["detail"]["message"]
+
+
+@patch("api.src.routers.openai_compatible.settings")
 def test_combine_voices_list_input(mock_settings, mock_tts_service, tmp_path):
     """List input joins into the same combine grammar"""
     mock_settings.allow_local_voice_saving = True
